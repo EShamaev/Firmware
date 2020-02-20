@@ -64,6 +64,7 @@ void setup(){
     Serial.print(getPCBVersion());
     if (TLE5206 == true) { Serial.print(F(" TLE5206 ")); }
     if (TLE9201 == true) { Serial.print(F(" TLE9201 ")); }
+    if (AFMotorV1 == true) { Serial.print(F(" AFMotorV1 ")); }
     Serial.println(F(" Detected"));
     sys.inchesToMMConversion = 1;
     sys.writeStepsToEEPROM = false;
