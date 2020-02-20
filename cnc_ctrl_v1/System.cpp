@@ -21,6 +21,7 @@ Copyright 2014-2017 Bar Smith*/
 
 bool TLE5206;
 bool TLE9201;
+bool AFMotorV1;
 
 // extern values using AUX pins defined in  setupAxes()
 int SpindlePowerControlPin;  // output for controlling spindle power
@@ -282,7 +283,42 @@ void   setupAxes(){
         aux8 = 46;
         aux9 = 47;
     }
-    else { // board not recognized
+    else if (pcbVersion == 8) { // AFMotor V1
+      //MP1 - Right Motor
+        encoder1A = 20;  // INPUT
+        encoder1B = 21;  // INPUT
+        in1 = 0;         // OUTPUT - not used
+        in2 = 0;         // OUTPUT - not used
+        enA = 1;         // OUTPUT - AFMotor number
+        ENA = enA;
+
+        //MP2 - Z-axis
+        encoder2A = 19;  // INPUT
+        encoder2B = 18;  // INPUT
+        in3 = 0;         // OUTPUT - not used
+        in4 = 0;         // OUTPUT - not used
+        enB = 2;         // OUTPUT - AFMotor number
+        ENB = enB;
+
+        //MP3 - Left Motor
+        encoder3A = 2;   // INPUT
+        encoder3B = 3;   // INPUT
+        in5 = 0;         // OUTPUT - not used
+        in6 = 0;         // OUTPUT - not used
+        enC = 3;         // OUTPUT - AFMotor number
+        ENC = enC;
+
+        //AUX pins
+        aux1 = 40;
+        aux2 = 41;
+        aux3 = 42;
+        aux4 = 43;
+        aux5 = 68;
+        aux6 = 69;
+        aux7 = 45;
+        aux8 = 46;
+        aux9 = 47;
+    } else { // board not recognized
         reportAlarmMessage(ALARM_BOARD_VERSION_INVALID);
         // Do we need to assure that no gpio pins are activated?
         encoder1A = 0;
@@ -400,6 +436,7 @@ int getPCBVersion(){
 *      x   x      x   x     GND PU    GND GND -> PCB v1.3 and 1.4 TLE5206
 *      x   x      GND GND   GND PU    GND PU  -> reserved for v1.4 TLE5206, v1.5 is unused
 *      x   x      GND GND   GND PU    PU  GND -> PCB v1.6 TLE9201
+*      x   x      GND GND   PU  GND   GND GND -> Adafruit-Motor-Shield-library V1
 */
     pinMode(VERS1,INPUT_PULLUP);
     pinMode(VERS2,INPUT_PULLUP);
@@ -414,15 +451,23 @@ int getPCBVersion(){
             pinCheck &= B000011; // strip off the unstrapped bits
             TLE5206 = false;
             TLE9201 = false;
+            AFMotorV1 = false;
             break;
         case B110100: case B000100: // some versions of board v1.4 don't strap VERS5-6 low
             pinCheck &= B000111;    // strip off the unstrapped bits
             TLE5206 = true;
             TLE9201 = false;
+            AFMotorV1 = false;
             break;
         case B000110:
             TLE5206 = false;
             TLE9201 = true;
+            AFMotorV1 = false;
+            break;
+        case B001000:
+            TLE5206 = false;
+            TLE9201 = false;
+            AFMotorV1 = true;
             break;
     }
     return pinCheck<6 ? pinCheck-1 : pinCheck;
@@ -435,6 +480,11 @@ int getPCBVersion(){
 //  tailor the PWM frequency to less than the driver chip upper limit
 //
 void setPWMPrescalers(int prescalerChoice) {
+  int pcbVersion = getPCBVersion();
+  
+  if (pcbVersion == 8) {
+    Serial.print(F("PWM is managed by AFMotor"));
+  } else {
     // limit prescalerChoice to valid values 1..3
     prescalerChoice = constrain(abs(prescalerChoice),1,3);
     #if defined (verboseDebug) && verboseDebug > 0
@@ -505,6 +555,7 @@ void setPWMPrescalers(int prescalerChoice) {
       }
     TCCR3B |= prescalerChoice;   // pins 2, 3, 5
     TCCR4B |= prescalerChoice;   // pins 6, 7, 8
+  }
 }
 
 

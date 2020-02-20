@@ -23,6 +23,11 @@ to be a drop in replacement for a continuous rotation servo.
 
 #include "Maslow.h"
 
+#include "AFmotor.h"
+
+// AF_DCMotor(1) can not be used as it uses TCCR1 which is needed for timing purposes
+AF_DCMotor AFDC[] = {AF_DCMotor(2), AF_DCMotor(3), AF_DCMotor(4)};
+
 Motor::Motor(){
 
   _attachedState = 0;
@@ -57,8 +62,12 @@ int  Motor::setupMotor(const int& pwmPin, const int& pin1, const int& pin2){
   //stop the motor
     digitalWrite(_pin2,    HIGH); // TLE9201 ENABLE pin, LOW = on
     
+  } else if (AFMotorV1 == true) {
+    // pwmPin is actually the motor number
+    AFDC[_pwmPin].setSpeed(0);
+    AFDC[_pwmPin].run(RELEASE);
   } else {
-  //set pinmodes
+    //set pinmodes
     pinMode(_pwmPin,   OUTPUT);
     pinMode(_pin1,     OUTPUT);
     pinMode(_pin2,     OUTPUT);
@@ -85,6 +94,10 @@ void Motor::detach(){
         //stop the motor
           digitalWrite(_pin2,    HIGH); // TLE9201 ENABLE pin, LOW = on
           analogWrite(_pwmPin,   0);
+        } else if (AFMotorV1 == true) {
+          // pwmPin is actually the motor number
+          AFDC[_pwmPin].setSpeed(0);
+          AFDC[_pwmPin].run(RELEASE);
         } else {
           //stop the motor
           digitalWrite(_pin1,    HIGH);
@@ -122,7 +135,16 @@ void Motor::write(int speed, bool force){
         bool usePin1 = ((_pin1 != 4) && (_pin1 != 13) && (_pin1 != 11) && (_pin1 != 12)); // avoid PWM using timer0 or timer1
         bool usePin2 = ((_pin2 != 4) && (_pin2 != 13) && (_pin2 != 11) && (_pin2 != 12)); // avoid PWM using timer0 or timer1
         bool usepwmPin = ((TLE5206 == false) && (_pwmPin != 4) && (_pwmPin != 13) && (_pwmPin != 11) && (_pwmPin != 12)); // avoid PWM using timer0 or timer1       
-        if (!(TLE5206 || TLE9201)) { // L298 boards
+
+        if (AFMotorV1) {
+          // pwmPin is actually the motor number
+          AFDC[_pwmPin].setSpeed(speed);
+          if (forward) {
+            AFDC[_pwmPin].run(FORWARD);
+          } else {
+            AFDC[_pwmPin].run(BACKWARD);
+          }
+        } else if (!(TLE5206 || TLE9201)) { // L298 boards
             if (forward){
                 if (usepwmPin){
                     digitalWrite(_pin1 , HIGH );

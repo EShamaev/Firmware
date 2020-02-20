@@ -51,6 +51,7 @@
     };
     extern bool TLE5206;
     extern bool TLE9201;
+    extern bool AFMotorV1;
     extern int ENA;
     extern int ENB;
     extern int ENC;
